@@ -9,8 +9,6 @@ from wordcloud import WordCloud
 import plotly.graph_objects as go
 from collections import Counter
 import re
-from nltk.corpus import stopwords
-import nltk
 
 ## TODO Add Kafka Consumer to get data from Kafka
 
@@ -416,6 +414,11 @@ def plot_comments_by_aspects(posts):
     st.plotly_chart(fig)
 
 def generate_word_histogram(posts):
+    
+    import nltk
+    nltk.download('stopwords')
+    from nltk.corpus import stopwords
+    
     # Concatenate all comments into a single string
     all_comments = ' '.join(posts['comment_text'].dropna())
 
