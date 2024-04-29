@@ -140,6 +140,9 @@ def create_sentiment_plot(posts):
     # Display the plot
     st.plotly_chart(fig, use_container_width=True)
     
+import matplotlib.pyplot as plt
+import streamlit as st
+
 def create_word_cloud(posts):
     """
     Create a word cloud from the comments in the given DataFrame.
@@ -156,11 +159,15 @@ def create_word_cloud(posts):
     # Create the word cloud
     wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
 
-    # Display the word cloud using Matplotlib
-    plt.figure(figsize=(10, 5))
-    plt.imshow(wordcloud, interpolation='bilinear')
-    plt.axis('off')
-    st.pyplot()
+    # Create a Matplotlib figure
+    fig, ax = plt.subplots(figsize=(10, 5))
+
+    # Display the word cloud on the figure
+    ax.imshow(wordcloud, interpolation='bilinear')
+    ax.axis('off')
+
+    # Display the figure in Streamlit
+    st.pyplot(fig)
 
 def get_metrics(posts):
     """
