@@ -10,6 +10,16 @@ import plotly.graph_objects as go
 from collections import Counter
 import re
 
+import nltk
+
+nltk_data_dir = "./resources/nltk_data_dir/"
+if not os.path.exists(nltk_data_dir):
+    os.makedirs(nltk_data_dir, exist_ok=True)
+nltk.data.path.clear()
+nltk.data.path.append(nltk_data_dir)
+nltk.download("stopwords", download_dir=nltk_data_dir)
+from nltk.corpus import stopwords
+
 ## TODO Add Kafka Consumer to get data from Kafka
 
 
@@ -414,10 +424,6 @@ def plot_comments_by_aspects(posts):
     st.plotly_chart(fig)
 
 def generate_word_histogram(posts):
-    
-    import nltk
-    nltk.download('stopwords')
-    from nltk.corpus import stopwords
     
     # Concatenate all comments into a single string
     all_comments = ' '.join(posts['comment_text'].dropna())
