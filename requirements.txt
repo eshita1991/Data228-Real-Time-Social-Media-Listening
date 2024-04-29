@@ -7,6 +7,5 @@ seaborn
 plotly.express
 wordcloud
 plotly
-collections
 re
 nltk
