@@ -1,0 +1,14 @@
+streamlit
+pandas
+numpy
+functions
+json
+vaderSentiment
+matplotlib
+seaborn
+plotly.express
+wordcloud
+plotly
+collections
+re
+nltk
