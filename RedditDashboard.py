@@ -108,7 +108,7 @@ def main():
         st.session_state.isExecuted = 0
 
     if button:
-        
+        subreddit_name = 'technology'
         kafka_producer(subreddit_name, keywords)
         st.session_state.isExecuted = 1
         tab1, tab2, tab3, tab4, tab5 = st.tabs(["Word Analysis","Sentiment Analysis", "Sentiment Trends", "Market Funnel", "Comment Analysis"])
