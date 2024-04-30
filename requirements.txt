@@ -8,3 +8,4 @@ plotly.express
 wordcloud
 plotly
 nltk
+boto3
