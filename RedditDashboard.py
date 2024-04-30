@@ -33,8 +33,8 @@ def main():
         if keyword:
             if st.session_state.isExecuted == 1:
                 st.session_state.isExecuted = 0
-                func.start_data_fetch(keyword)
-                posts = func.createDFfromJSON(keyword)
+                posts = func.start_data_fetch(keyword)
+                # posts = func.createDFfromJSON(keyword)
                 posts = func.dataCleaning(posts)
                 reach, engagement, share_of_voice = func.get_metrics(posts)
                 st.sidebar.write('Search completed.')
