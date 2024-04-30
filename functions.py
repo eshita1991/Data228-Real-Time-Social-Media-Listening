@@ -68,7 +68,7 @@ def createDFfromJSON(keyword):
 
     # Load JSON data from a file
     with open(file_path, 'r') as file:
-        json_data = json.loads(file)
+        json_data = json.load(file)
 
     # Normalize the data into a flat table
     # Here we are extracting comments and including related post details as additional columns
