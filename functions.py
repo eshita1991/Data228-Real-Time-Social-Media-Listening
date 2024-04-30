@@ -64,11 +64,11 @@ def createDFfromJSON(keyword):
     import pandas as pd
 
     # Path to the JSON file
-    file_path = 'ap.json'
+    file_path = 'reddit_keywords_data_new.json'
 
     # Load JSON data from a file
     with open(file_path, 'r') as file:
-        json_data = json.load(file)
+        json_data = json.loads(file)
 
     # Normalize the data into a flat table
     # Here we are extracting comments and including related post details as additional columns
