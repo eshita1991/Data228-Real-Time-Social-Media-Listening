@@ -8,5 +8,5 @@ plotly.express
 wordcloud
 plotly
 nltk
-praw
 kafka-python
+praw

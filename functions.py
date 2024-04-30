@@ -10,42 +10,137 @@ from wordcloud import WordCloud
 import plotly.graph_objects as go
 from collections import Counter
 import re
+import praw
+from kafka import KafkaProducer
+from kafka import KafkaConsumer
+from json import dumps, loads
+import json
+import threading
+import time
 
 import nltk
 
-"""nltk_data_dir = "./resources/nltk_data_dir/"
+nltk_data_dir = "./resources/nltk_data_dir/"
 if not os.path.exists(nltk_data_dir):
     os.makedirs(nltk_data_dir, exist_ok=True)
 nltk.data.path.clear()
 nltk.data.path.append(nltk_data_dir)
-nltk.download("stopwords", download_dir=nltk_data_dir)"""
+nltk.download("stopwords", download_dir=nltk_data_dir)
 from nltk.corpus import stopwords
-#nltk.download("stopwords")
+
 ## TODO Add Kafka Consumer to get data from Kafka
 
+reddit = praw.Reddit(
+    client_id="VYwI_9Xqdf4-j6YbAcIXCA",
+    client_secret="OvQUVB1QMNs0Xuo9tkOQ9BqVxH-Kmg",
+    password="Billion@99",
+    user_agent="my_bigdata",
+    username="v1nomad",
+)
 
-"""
-from kafka import KafkaConsumer
-from json import dumps,loads
-import boto3
-import time
+def fetch_data_from_reddit(subreddit_name, keywords):
+    subreddit = reddit.subreddit(subreddit_name)
+    for submission in subreddit.top(limit=100):
+        if all(keyword.lower() in submission.title.lower() for keyword in keywords):
+            post_id = submission.id
+            title = submission.title
+            url = submission.url
+            score = submission.score
+            upvotes = submission.ups
+            downvotes = submission.downs
+            num_comments = submission.num_comments
+            text = submission.selftext
+            author = submission.author.name if submission.author else None
+            author_post_karma = None
+            if submission.author:
+                try:
+                    author_info = reddit.redditor(submission.author.name)
+                    author_post_karma = author_info.link_karma + author_info.comment_karma
+                except AttributeError:
+                # Handle the case where karma retrieval fails
+                    author_post_karma = None
+            tag = submission.link_flair_text if submission.link_flair_text else None
+            comments_data = []
+            for comment in submission.comments:
+                if isinstance(comment, praw.models.MoreComments):
+                    continue  # Skip MoreComments objects
+                comment_data = {
+                    'comment_id': comment.id,
+                    'author': comment.author.name if comment.author else None,
+                    'datetime': comment.created_utc,
+                    'text': comment.body
+                }
+                comments_data.append(comment_data)
 
-consumer = KafkaConsumer('technot', bootstrap_servers=['18.234.36.200:9092'])
+            yield {
+                'post_id': post_id,
+                'title': title,
+                'url': url,
+                'score': score,
+                'upvotes': upvotes,
+                'downvotes': downvotes,
+                'num_comments': num_comments,
+                'text': text,
+                'author': author,
+                'author_post_karma': author_post_karma,
+                'tag': tag,
+                'comments': comments_data
+            }
 
-for message in consumer:
-    data = loads(message.value.decode('utf-8'))
-    json_data = dumps(data, indent=4)  # Convert data to JSON format with indentation
-    all_json_data.append(json_data)  # Append JSON data to the list
-    
-    # Check if timeout has been reached
-    if time.time() - start_time > timeout_seconds:
-        print("Timeout reached. Exiting loop.")
-        break
+# Start Kafka Producer
+def kafka_producer(subreddit_name, keywords):
+    producer = KafkaProducer(bootstrap_servers=['18.234.36.200:9092'])
+    for data in fetch_data_from_reddit(subreddit_name, keywords):
+        serialized_data = json.dumps(data).encode('utf-8')
+        producer.send('technot', serialized_data)
+    producer.flush()
+    producer.close()
 
-# Combine all JSON data into a single string
-combined_json_data = '\n'.join(all_json_data)
+def start_producer(keywords_input):
+    subreddit_name = 'technology'
+    # keywords_input = input("Enter keywords separated by commas: ")
+    keywords = [keyword.strip() for keyword in keywords_input.split(",")]
+    kafka_producer(subreddit_name, keywords)
+    with open('producer_status.txt', 'w') as f:
+        f.write('done')
 
-"""
+# Start Kafka Consumer
+def start_consumer():
+    consumer = KafkaConsumer('technot', bootstrap_servers=['18.234.36.200:9092'])
+
+    open('reddit_keywords_data_new.json', 'w').close()
+    open('producer_status.txt', 'w').close()
+
+    data_list = []
+
+    try:
+        for message in consumer:
+            data = loads(message.value.decode('utf-8'))
+            data_list.append(data)
+            # print(data)  # Print data for verification
+            # Check if the producer has finished producing messages
+            with open('producer_status.txt', 'r') as status_file:
+                if status_file.read().strip() == 'done':
+                    break  # If producer is done, break out of the loop
+    except KeyboardInterrupt:
+        pass  # Catch KeyboardInterrupt to gracefully stop the consumer
+    finally:
+        consumer.close()
+
+    # Write list of dictionaries as JSON to file
+    with open('reddit_keywords_data_new.json', 'w') as file:
+        json_data = dumps(data_list, indent=4)
+        file.write(json_data)
+
+# Call Producer and Consumer
+def start_data_fetch(keywords_input): 
+    producer_thread = threading.Thread(target=start_producer, args=(keywords_input,))
+    consumer_thread = threading.Thread(target=start_consumer)
+    producer_thread.start()
+    consumer_thread.start()
+    producer_thread.join()
+    consumer_thread.join()
+
 def createDFfromJSON(keyword):
     """
     Create a pandas DataFrame from a JSON file.
@@ -486,3 +581,5 @@ def generate_word_histogram(posts):
 
     # Display the Plotly chart in Streamlit
     st.plotly_chart(fig)
+
+

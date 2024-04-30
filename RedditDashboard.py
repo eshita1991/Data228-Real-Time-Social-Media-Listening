@@ -3,84 +3,7 @@ import pandas as pd
 import numpy as np
 import functions as func
 
-import praw
-from kafka import KafkaProducer
-from json import dumps, loads
-import json
-
-reddit = praw.Reddit(
-    client_id="VYwI_9Xqdf4-j6YbAcIXCA",
-    client_secret="OvQUVB1QMNs0Xuo9tkOQ9BqVxH-Kmg",
-    password="Billion@99",
-    user_agent="my_bigdata",
-    username="v1nomad",
-)
-
-def fetch_data_from_reddit(subreddit_name, keywords):
-    subreddit = reddit.subreddit(subreddit_name)
-    for submission in subreddit.top(limit=100):
-        if all(keyword.lower() in submission.title.lower() for keyword in keywords):
-            post_id = submission.id
-            title = submission.title
-            url = submission.url
-            score = submission.score
-            upvotes = submission.ups
-            downvotes = submission.downs
-            num_comments = submission.num_comments
-            text = submission.selftext
-            author = submission.author.name if submission.author else None
-            author_post_karma = None
-            if submission.author:
-                try:
-                    author_info = reddit.redditor(submission.author.name)
-                    author_post_karma = author_info.link_karma + author_info.comment_karma
-                except AttributeError:
-                # Handle the case where karma retrieval fails
-                    author_post_karma = None
-            tag = submission.link_flair_text if submission.link_flair_text else None
-            comments_data = []
-            for comment in submission.comments:
-                if isinstance(comment, praw.models.MoreComments):
-                    continue  # Skip MoreComments objects
-                comment_data = {
-                    'comment_id': comment.id,
-                    'author': comment.author.name if comment.author else None,
-                    'datetime': comment.created_utc,
-                    'text': comment.body
-                }
-                comments_data.append(comment_data)
-
-            yield {
-                'post_id': post_id,
-                'title': title,
-                'url': url,
-                'score': score,
-                'upvotes': upvotes,
-                'downvotes': downvotes,
-                'num_comments': num_comments,
-                'text': text,
-                'author': author,
-                'author_post_karma': author_post_karma,
-                'tag': tag,
-                'comments': comments_data
-            }
-
-def kafka_producer(subreddit_name, keywords):
-    producer = KafkaProducer(bootstrap_servers=['18.234.36.200:9092'])
-    for data in fetch_data_from_reddit(subreddit_name, keywords):
-        serialized_data = json.dumps(data).encode('utf-8')
-        producer.send('technot', serialized_data)
-    producer.flush()
-
-
 def main():
-
-    """subreddit_name = 'technology'
-    keywords_input = input("Enter keywords separated by commas: ")
-    keywords = [keyword.strip() for keyword in keywords_input.split(",")]
-    kafka_producer(subreddit_name, keywords)"""
-
-    
     # Set page config to wider layout
     st.set_page_config(layout="wide")
     # Import CSS file
@@ -93,10 +16,7 @@ def main():
 
     # Add one selection field and a button on the sidebar. The selection field should hold keywords that the user can search for.
     # keyword = st.sidebar.selectbox('Select a keyword', ['AI', 'Politics', 'Software', 'Security', 'Business'])
-    keyword = st.sidebar.text_input('Enter a keyword')
-    keywords = [keyword.strip() for keyword in keyword.split(",")]
-    #when button pressed
-    #kafka_producer(subreddit_name, keywords)
+    keyword = st.sidebar.text_input('Enter a keyword')  
     button = st.sidebar.button('Search')
 
     row0 = st.columns(1)
@@ -108,13 +28,12 @@ def main():
         st.session_state.isExecuted = 0
 
     if button:
-        subreddit_name = 'technology'
-        kafka_producer(subreddit_name, keywords)
         st.session_state.isExecuted = 1
         tab1, tab2, tab3, tab4, tab5 = st.tabs(["Word Analysis","Sentiment Analysis", "Sentiment Trends", "Market Funnel", "Comment Analysis"])
         if keyword:
             if st.session_state.isExecuted == 1:
                 st.session_state.isExecuted = 0
+                func.start_data_fetch(keyword)
                 posts = func.createDFfromJSON(keyword)
                 posts = func.dataCleaning(posts)
                 reach, engagement, share_of_voice = func.get_metrics(posts)
