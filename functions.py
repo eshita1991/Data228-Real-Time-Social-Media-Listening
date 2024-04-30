@@ -10,6 +10,7 @@ from wordcloud import WordCloud
 import plotly.graph_objects as go
 from collections import Counter
 import re
+import boto3
 
 import nltk
 
@@ -42,7 +43,18 @@ def createDFfromJSON(keyword):
     import pandas as pd
 
     # Path to the JSON file
-    file_path = 'ap.json'
+    # Set AWS credentials
+    access_key = 'AKIA2YG45M34BJWL5HPN'
+    secret_key = '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'
+
+    # Set S3 bucket name and file key
+    bucket_name = 'reddit-kafka-bigdata'
+    file_key = 'reddit_keywords_data_new.json'
+    s3 = boto3.client('s3', aws_access_key_id=access_key, aws_secret_access_key=secret_key)
+    file_path = 'reddit_keywords_data_new.json'
+    # Download the file from S3
+    s3.download_file(bucket_name, file_key, file_path)
+    
 
     # Load JSON data from a file
     with open(file_path, 'r') as file:
