@@ -8,4 +8,4 @@ plotly.express
 wordcloud
 plotly
 nltk
-
+praw
