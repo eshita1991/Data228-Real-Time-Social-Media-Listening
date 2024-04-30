@@ -105,13 +105,13 @@ def start_producer(keywords_input):
         f.write('done')
 
 # Start Kafka Consumer
-def start_consumer():
+def start_consumer(data_list):
     consumer = KafkaConsumer('technot', bootstrap_servers=['18.234.36.200:9092'])
 
-    open('reddit_keywords_data_new.json', 'w').close()
+    # open('reddit_keywords_data_new.json', 'w').close()
     open('producer_status.txt', 'w').close()
 
-    data_list = []
+    # data_list = []
 
     try:
         for message in consumer:
@@ -128,18 +128,24 @@ def start_consumer():
         consumer.close()
 
     # Write list of dictionaries as JSON to file
-    with open('reddit_keywords_data_new.json', 'w') as file:
+    ''' with open('reddit_keywords_data_new.json', 'w') as file:
         json_data = dumps(data_list, indent=4)
-        file.write(json_data)
+        file.write(json_data) '''
 
 # Call Producer and Consumer
 def start_data_fetch(keywords_input): 
+    data_list = []
     producer_thread = threading.Thread(target=start_producer, args=(keywords_input,))
-    consumer_thread = threading.Thread(target=start_consumer)
+    consumer_thread = threading.Thread(target=start_consumer, args=(data_list,))
     producer_thread.start()
     consumer_thread.start()
     producer_thread.join()
     consumer_thread.join()
+    df = pd.json_normalize(data_list,'comments', 
+                            ['post_id', 'title', 'url', 'score', 'upvotes', 'downvotes', 
+                            'num_comments', 'text', 'author', 'author_post_karma', 'tag'], 
+                            record_prefix='comment_')
+    return df
 
 def createDFfromJSON(keyword):
     """
