@@ -9,3 +9,4 @@ wordcloud
 plotly
 nltk
 praw
+kafka-python
