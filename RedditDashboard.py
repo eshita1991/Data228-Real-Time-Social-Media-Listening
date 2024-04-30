@@ -18,7 +18,7 @@ reddit = praw.Reddit(
 
 def fetch_data_from_reddit(subreddit_name, keywords):
     subreddit = reddit.subreddit(subreddit_name)
-    for submission in subreddit.new(limit=None):
+    for submission in subreddit.top(limit=100):
         if all(keyword.lower() in submission.title.lower() for keyword in keywords):
             post_id = submission.id
             title = submission.title
@@ -31,8 +31,12 @@ def fetch_data_from_reddit(subreddit_name, keywords):
             author = submission.author.name if submission.author else None
             author_post_karma = None
             if submission.author:
-                author_info = reddit.redditor(submission.author.name)
-                author_post_karma = author_info.link_karma
+                try:
+                    author_info = reddit.redditor(submission.author.name)
+                    author_post_karma = author_info.link_karma + author_info.comment_karma
+                except AttributeError:
+                # Handle the case where karma retrieval fails
+                    author_post_karma = None
             tag = submission.link_flair_text if submission.link_flair_text else None
             comments_data = []
             for comment in submission.comments:
