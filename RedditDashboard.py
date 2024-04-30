@@ -94,7 +94,7 @@ def main():
     # Add one selection field and a button on the sidebar. The selection field should hold keywords that the user can search for.
     # keyword = st.sidebar.selectbox('Select a keyword', ['AI', 'Politics', 'Software', 'Security', 'Business'])
     keyword = st.sidebar.text_input('Enter a keyword')
-    keywords = [keyword.strip() for keyword in keywords_input.split(",")]
+    keywords = [keyword.strip() for keyword in keyword.split(",")]
     #when button pressed
     #kafka_producer(subreddit_name, keywords)
     button = st.sidebar.button('Search')
