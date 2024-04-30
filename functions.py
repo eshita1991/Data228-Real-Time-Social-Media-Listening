@@ -24,6 +24,28 @@ from nltk.corpus import stopwords
 ## TODO Add Kafka Consumer to get data from Kafka
 
 
+"""
+from kafka import KafkaConsumer
+from json import dumps,loads
+import boto3
+import time
+
+consumer = KafkaConsumer('technot', bootstrap_servers=['18.234.36.200:9092'])
+
+for message in consumer:
+    data = loads(message.value.decode('utf-8'))
+    json_data = dumps(data, indent=4)  # Convert data to JSON format with indentation
+    all_json_data.append(json_data)  # Append JSON data to the list
+    
+    # Check if timeout has been reached
+    if time.time() - start_time > timeout_seconds:
+        print("Timeout reached. Exiting loop.")
+        break
+
+# Combine all JSON data into a single string
+combined_json_data = '\n'.join(all_json_data)
+
+"""
 def createDFfromJSON(keyword):
     """
     Create a pandas DataFrame from a JSON file.
