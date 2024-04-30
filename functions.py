@@ -587,5 +587,3 @@ def generate_word_histogram(posts):
 
     # Display the Plotly chart in Streamlit
     st.plotly_chart(fig)
-
-
