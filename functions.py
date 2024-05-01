@@ -40,8 +40,8 @@ reddit = praw.Reddit(
 
 def fetch_data_from_reddit(subreddit_name, keywords):
     subreddit = reddit.subreddit(subreddit_name)
-    for submission in subreddit.search(' '.join(keywords), time_filter='month', sort='new', limit=50):  # Adjusted time_filter to 'month'
-    #for submission in subreddit.new(limit=None):
+    #for submission in subreddit.search(' '.join(keywords), time_filter='month', sort='new', limit=50):  # Adjusted time_filter to 'month'
+    for submission in subreddit.new(limit=None):
         if all(keyword.lower() in submission.title.lower() for keyword in keywords):
             post_id = submission.id
             title = submission.title
