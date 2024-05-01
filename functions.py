@@ -40,7 +40,7 @@ reddit = praw.Reddit(
 
 def fetch_data_from_reddit(subreddit_name, keywords):
     subreddit = reddit.subreddit(subreddit_name)
-    for submission in subreddit.top(limit=100):
+    for submission in subreddit.new(limit=None):
         if all(keyword.lower() in submission.title.lower() for keyword in keywords):
             post_id = submission.id
             title = submission.title
