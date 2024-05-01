@@ -50,7 +50,7 @@ def fetch_data_from_reddit(subreddit_name, keywords):
             upvotes = submission.ups
             downvotes = submission.downs
             num_comments = submission.num_comments
-            text = submission.selftext
+            comment_text = submission.selftext
             author = submission.author.name if submission.author else None
             author_post_karma = None
             if submission.author:
@@ -69,7 +69,7 @@ def fetch_data_from_reddit(subreddit_name, keywords):
                     'comment_id': comment.id,
                     'author': comment.author.name if comment.author else None,
                     'datetime': comment.created_utc,
-                    'text': comment.body
+                    'comment_text': comment.body
                 }
                 comments_data.append(comment_data)
 
@@ -81,7 +81,7 @@ def fetch_data_from_reddit(subreddit_name, keywords):
                 'upvotes': upvotes,
                 'downvotes': downvotes,
                 'num_comments': num_comments,
-                'text': text,
+                'comment_text': comment_text,
                 'author': author,
                 'author_post_karma': author_post_karma,
                 'tag': tag,
@@ -144,7 +144,7 @@ def start_data_fetch(keywords_input):
     consumer_thread.join()
     df = pd.json_normalize(data_list,'comments', 
                             ['post_id', 'title', 'url', 'score', 'upvotes', 'downvotes', 
-                            'num_comments', 'text', 'author', 'author_post_karma', 'tag'], 
+                            'num_comments', 'comment_text', 'author', 'author_post_karma', 'tag'], 
                             record_prefix='comment_')
     return df
 
@@ -176,7 +176,7 @@ def createDFfromJSON(keyword):
     # Here we are extracting comments and including related post details as additional columns
     posts = pd.json_normalize(json_data, 'comments', 
                             ['post_id', 'title', 'url', 'score', 'upvotes', 'downvotes', 
-                            'num_comments', 'text', 'author', 'author_post_karma', 'tag'], 
+                            'num_comments', 'comment_text', 'author', 'author_post_karma', 'tag'], 
                             record_prefix='comment_')
 
     return posts
