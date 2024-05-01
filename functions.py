@@ -20,6 +20,11 @@ import time
 
 import nltk
 
+# Global flag to signal termination
+producer_done = False
+
+# producer_done_event = threading.Event()
+
 nltk_data_dir = "./resources/nltk_data_dir/"
 if not os.path.exists(nltk_data_dir):
     os.makedirs(nltk_data_dir, exist_ok=True)
@@ -40,8 +45,7 @@ reddit = praw.Reddit(
 
 def fetch_data_from_reddit(subreddit_name, keywords):
     subreddit = reddit.subreddit(subreddit_name)
-    for submission in subreddit.search(' '.join(keywords), time_filter='month', sort='new', limit=50):  # Adjusted time_filter to 'month'
-    #for submission in subreddit.new(limit=100):
+    for submission in subreddit.search(' '.join(keywords), time_filter='month', sort='new', limit=50):
         if all(keyword.lower() in submission.title.lower() for keyword in keywords):
             post_id = submission.id
             title = submission.title
@@ -62,6 +66,7 @@ def fetch_data_from_reddit(subreddit_name, keywords):
                     author_post_karma = None
             tag = submission.link_flair_text if submission.link_flair_text else None
             comments_data = []
+
             for comment in submission.comments:
                 if isinstance(comment, praw.models.MoreComments):
                     continue  # Skip MoreComments objects
@@ -97,58 +102,49 @@ def kafka_producer(subreddit_name, keywords):
     producer.flush()
     producer.close()
 
-def start_producer(keywords_input):
+def start_producer(keywords_input, producer_done_event):
     subreddit_name = 'technology'
-    # keywords_input = input("Enter keywords separated by commas: ")
     keywords = [keyword.strip() for keyword in keywords_input.split(",")]
     kafka_producer(subreddit_name, keywords)
-    with open('producer_status.txt', 'w') as f:
-        f.write('done')
+    producer_done_event.set()
 
 # Start Kafka Consumer
-def start_consumer(data_list):
+def start_consumer(data_list, producer_done_event):
     consumer = KafkaConsumer('technot', bootstrap_servers=['18.234.36.200:9092'])
-
-    # open('reddit_keywords_data_new.json', 'w').close()
-    open('producer_status.txt', 'w').close()
-
-    # data_list = []
-
     try:
-        for message in consumer:
-            data = loads(message.value.decode('utf-8'))
-            data_list.append(data)
-            # print(data)  # Print data for verification
-            # Check if the producer has finished producing messages
-            with open('producer_status.txt', 'r') as status_file:
-                if status_file.read().strip() == 'done':
-                    break  # If producer is done, break out of the loop
+        while not producer_done_event.is_set():
+            batch = consumer.poll(timeout_ms=1000)
+            for tp, messages in batch.items():
+                for message in messages:
+                    data = loads(message.value.decode('utf-8'))
+                    data_list.append(data)
+                if len(batch) == 0:
+                    print("No new messages received.")    
     except KeyboardInterrupt:
         pass  # Catch KeyboardInterrupt to gracefully stop the consumer
     finally:
         consumer.close()
 
-    # Write list of dictionaries as JSON to file
-    ''' with open('reddit_keywords_data_new.json', 'w') as file:
-        json_data = dumps(data_list, indent=4)
-        file.write(json_data) '''
-
 # Call Producer and Consumer
-def start_data_fetch(keywords_input): 
+def start_data_fetch(keywords_input):
+    producer_done_event = threading.Event() 
     data_list = []
-    producer_thread = threading.Thread(target=start_producer, args=(keywords_input,))
-    consumer_thread = threading.Thread(target=start_consumer, args=(data_list,))
+    producer_thread = threading.Thread(target=start_producer, args=(keywords_input,producer_done_event))
+    consumer_thread = threading.Thread(target=start_consumer, args=(data_list, producer_done_event))
     producer_thread.start()
     consumer_thread.start()
     producer_thread.join()
     consumer_thread.join()
-    df = pd.json_normalize(data_list,'comments', 
-                            ['post_id', 'title', 'url', 'score', 'upvotes', 'downvotes', 
-                            'num_comments', 'text', 'author', 'author_post_karma', 'tag'], 
-                            record_prefix='comment_')
-    return df
+    if not data_list:
+        return pd.DataFrame()
+    else:
+        df = pd.json_normalize(data_list,'comments', 
+                                ['post_id', 'title', 'url', 'score', 'upvotes', 'downvotes', 
+                                'num_comments', 'text', 'author', 'author_post_karma', 'tag'], 
+                                record_prefix='comment_')
+        return df
 
-def createDFfromJSON(keyword):
+'''def createDFfromJSON(keyword):
     """
     Create a pandas DataFrame from a JSON file.
 
@@ -179,7 +175,7 @@ def createDFfromJSON(keyword):
                             'num_comments', 'text', 'author', 'author_post_karma', 'tag'], 
                             record_prefix='comment_')
 
-    return posts
+    return posts'''
 
 def dataCleaning(posts):
     """
