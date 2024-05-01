@@ -7,7 +7,8 @@ Run the app using the following command
 _____
 _**streamlit run RedditDashboard.py**_
 
-**App URL:** https://data228-social-media-listening.streamlit.app/
+**App URL:** https://reddit-realtime-listening.streamlit.app/ 
+
 
 **Note**: Prior to running the app, we need to initialize the Kafka Broker using the following command on the EC2 instance.
 ______
