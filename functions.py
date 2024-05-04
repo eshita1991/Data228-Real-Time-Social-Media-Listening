@@ -289,7 +289,7 @@ def create_word_cloud(posts):
     # Display the figure in Streamlit
     st.pyplot(fig)
 
-def get_metrics(posts):
+def get_metrics(posts,keyword):
     """
     Calculate various metrics based on the given posts data.
 
@@ -299,12 +299,12 @@ def get_metrics(posts):
     Returns:
     - reach (int): The number of unique comment authors.
     - engagement (int): The sum of upvotes and number of comments.
-    - share_of_voice (float): The percentage of posts that mention "Apple Vision Pro".
+    - share_of_voice (float): The percentage of posts that mention a keyword.
 
     """
     reach = posts['comment_author'].nunique()
     engagement = posts['upvotes'].sum() + posts['num_comments'].sum()
-    total_mentions = posts[posts['comment_text'].str.contains("Apple Vision Pro", case=False)].shape[0]
+    total_mentions = posts[posts['comment_text'].str.contains(keyword, case=False)].shape[0]
     total_comments = posts.shape[0]
     share_of_voice = round((total_mentions / total_comments) * 100,2)
     return reach, engagement, share_of_voice
