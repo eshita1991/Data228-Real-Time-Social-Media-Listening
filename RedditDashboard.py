@@ -3,10 +3,6 @@ import pandas as pd
 import numpy as np
 import functions as func
 
-@st.cache_data
-def fetch_posts(keyword):
-    return func.start_data_fetch(keyword)
-
 def main():
     # Set page config to wider layout
     st.set_page_config(layout="wide")
@@ -37,14 +33,14 @@ def main():
         if keyword:
             if st.session_state.isExecuted == 1:
                 st.session_state.isExecuted = 0
-                #  posts = func.start_data_fetch(keyword)
-                posts = fetch_posts(keyword)
+                posts = func.start_data_fetch(keyword)
+                # posts = fetch_posts(keyword)
                 if len(posts) == 0:
                     st.write('No data found for the keyword. Please try another keyword.')
                     return
                 # posts = func.createDFfromJSON(keyword)
                 posts = func.dataCleaning(posts)
-                reach, engagement, share_of_voice = func.get_metrics(posts)
+                reach, engagement, share_of_voice = func.get_metrics(posts,keyword)
                 st.sidebar.write('Search completed.')
                 st.sidebar.write(f"<div class='summary-header'>Reach (Unique Users)</div>", unsafe_allow_html=True)
                 st.sidebar.write(f"<div class='summary-text'>{reach}</div>", unsafe_allow_html=True)
