@@ -1,9 +1,29 @@
+# Subject: Data 225 (Big Data Technologies)
+# Group No: 5
+# Topic: Real-Time Social Media Listening (Reddit)
+# Usage: Main file to run the Streamlit dashboard
+# -------------------------------------------------
+
 import streamlit as st
 import pandas as pd
 import numpy as np
 import functions as func
 
 def main():
+    """
+    The main function that sets up the Social Media Listening Dashboard.
+
+    This function sets the page configuration to a wider layout, imports a CSS file,
+    and creates the main components of the dashboard, including the title, sidebar,
+    keyword selection field, and search button. It also handles the search functionality
+    and displays the results in different tabs.
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
     # Set page config to wider layout
     st.set_page_config(layout="wide")
     # Import CSS file
@@ -26,6 +46,7 @@ def main():
 
     if "isExecuted" not in st.session_state:
         st.session_state.isExecuted = 0
+        st.cache_data.clear()
 
     if button:
         st.session_state.isExecuted = 1
@@ -34,11 +55,9 @@ def main():
             if st.session_state.isExecuted == 1:
                 st.session_state.isExecuted = 0
                 posts = func.start_data_fetch(keyword)
-                # posts = fetch_posts(keyword)
                 if len(posts) == 0:
                     st.write('No data found for the keyword. Please try another keyword.')
                     return
-                # posts = func.createDFfromJSON(keyword)
                 posts = func.dataCleaning(posts)
                 reach, engagement, share_of_voice = func.get_metrics(posts,keyword)
                 st.sidebar.write('Search completed.')
@@ -89,7 +108,7 @@ def main():
                         with row[1]:
                             func.plot_comments_by_aspects(posts)
         else:
-            st.write('Please select a keyword to search for.')                
+            st.write('Please select a keyword to search for.')
 
 if __name__ == "__main__":
     main()
