@@ -1,3 +1,12 @@
+/*
+    # Subject: Data 225 (Big Data Technologies)
+    # Group No: 5
+    # Topic: Real-Time Social Media Listening (Reddit)
+    # Usage: CSS file for the Reddit Dashboard
+    This file contains the CSS styles for the application.
+    The styles are applied to the Dash components using the className attribute.
+    The styles are applied to the components based on the className attribute value.
+*/
 .block-container {
     padding-top: 1rem;
     padding-bottom: 0rem;
