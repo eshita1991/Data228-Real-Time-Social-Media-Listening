@@ -1,3 +1,10 @@
+# Subject: Data 225 (Big Data Technologies)
+# Group No: 5
+# Topic: Real-Time Social Media Listening (Reddit)
+# Usage: Functions for Usage with Reddit Dashboard Streamlit App
+# -------------------------------------------------
+
+# Import Relevant Libraries
 import json
 import os
 import pandas as pd
@@ -17,15 +24,10 @@ from json import dumps, loads
 import json
 import threading
 import time
-
 import nltk
-
-# Global flag to signal termination
-producer_done = False
-
-# producer_done_event = threading.Event()
-
 nltk_data_dir = "./resources/nltk_data_dir/"
+
+# Adding additional logic to allow deployment to Streamlit Cloud for NLTK library
 if not os.path.exists(nltk_data_dir):
     os.makedirs(nltk_data_dir, exist_ok=True)
 nltk.data.path.clear()
@@ -33,8 +35,8 @@ nltk.data.path.append(nltk_data_dir)
 nltk.download("stopwords", download_dir=nltk_data_dir)
 from nltk.corpus import stopwords
 
-## TODO Add Kafka Consumer to get data from Kafka
 
+# Initialize Reddit API
 reddit = praw.Reddit(
     client_id="VYwI_9Xqdf4-j6YbAcIXCA",
     client_secret="OvQUVB1QMNs0Xuo9tkOQ9BqVxH-Kmg",
@@ -43,7 +45,19 @@ reddit = praw.Reddit(
     username="v1nomad",
 )
 
+# Function to fetch data from Reddit
 def fetch_data_from_reddit(subreddit_name, keywords):
+    """
+    Fetches data from Reddit based on the given subreddit name and keywords.
+
+    Args:
+        subreddit_name (str): The name of the subreddit to fetch data from.
+        keywords (list): A list of keywords to search for in the subreddit.
+
+    Yields:
+        dict: A dictionary containing the fetched data for each submission.
+
+    """
     subreddit = reddit.subreddit(subreddit_name)
     for submission in subreddit.search(' '.join(keywords), time_filter='month', sort='new', limit=50):
         if all(keyword.lower() in submission.title.lower() for keyword in keywords):
@@ -62,7 +76,7 @@ def fetch_data_from_reddit(subreddit_name, keywords):
                     author_info = reddit.redditor(submission.author.name)
                     author_post_karma = author_info.link_karma + author_info.comment_karma
                 except AttributeError:
-                # Handle the case where karma retrieval fails
+                    # Handle the case where karma retrieval fails
                     author_post_karma = None
             tag = submission.link_flair_text if submission.link_flair_text else None
             comments_data = []
@@ -95,6 +109,16 @@ def fetch_data_from_reddit(subreddit_name, keywords):
 
 # Start Kafka Producer
 def kafka_producer(subreddit_name, keywords):
+    """
+    Sends data from Reddit to a Kafka topic.
+
+    Args:
+        subreddit_name (str): The name of the subreddit to fetch data from.
+        keywords (list): A list of keywords to filter the data.
+
+    Returns:
+        None
+    """
     producer = KafkaProducer(bootstrap_servers=['18.234.36.200:9092'])
     for data in fetch_data_from_reddit(subreddit_name, keywords):
         serialized_data = json.dumps(data).encode('utf-8')
@@ -103,6 +127,16 @@ def kafka_producer(subreddit_name, keywords):
     producer.close()
 
 def start_producer(keywords_input, producer_done_event):
+    """
+    Starts the producer to fetch data from the 'technology' subreddit based on the given keywords.
+
+    Args:
+        keywords_input (str): A comma-separated string of keywords.
+        producer_done_event (threading.Event): An event object to signal when the producer is done.
+
+    Returns:
+        None
+    """
     subreddit_name = 'technology'
     keywords = [keyword.strip() for keyword in keywords_input.split(",")]
     kafka_producer(subreddit_name, keywords)
@@ -110,6 +144,16 @@ def start_producer(keywords_input, producer_done_event):
 
 # Start Kafka Consumer
 def start_consumer(data_list, producer_done_event):
+    """
+    Starts a Kafka consumer that listens for messages on the 'technot' topic.
+
+    Args:
+        data_list (list): A list to store the received data.
+        producer_done_event (threading.Event): An event to signal when the producer is done.
+
+    Returns:
+        None
+    """
     consumer = KafkaConsumer('technot', bootstrap_servers=['18.234.36.200:9092'])
     try:
         while not producer_done_event.is_set():
@@ -127,6 +171,15 @@ def start_consumer(data_list, producer_done_event):
 
 # Call Producer and Consumer
 def start_data_fetch(keywords_input):
+    """
+    Fetches data using a producer-consumer pattern.
+
+    Args:
+        keywords_input (str): The input keywords for data fetching.
+
+    Returns:
+        pandas.DataFrame: The fetched data in a DataFrame format.
+    """
     producer_done_event = threading.Event() 
     data_list = []
     producer_thread = threading.Thread(target=start_producer, args=(keywords_input,producer_done_event))
@@ -144,39 +197,7 @@ def start_data_fetch(keywords_input):
                                 record_prefix='comment_')
         return df
 
-'''def createDFfromJSON(keyword):
-    """
-    Create a pandas DataFrame from a JSON file.
-
-    Args:
-        keyword (str): The keyword to search for in the JSON data.
-
-    Returns:
-        pandas.DataFrame: The DataFrame containing the normalized data.
-
-    Raises:
-        FileNotFoundError: If the JSON file specified by `file_path` does not exist.
-
-    """
-    import json
-    import pandas as pd
-
-    # Path to the JSON file
-    file_path = 'reddit_keywords_data_new.json'
-
-    # Load JSON data from a file
-    with open(file_path, 'r') as file:
-        json_data = json.load(file)
-
-    # Normalize the data into a flat table
-    # Here we are extracting comments and including related post details as additional columns
-    posts = pd.json_normalize(json_data, 'comments', 
-                            ['post_id', 'title', 'url', 'score', 'upvotes', 'downvotes', 
-                            'num_comments', 'text', 'author', 'author_post_karma', 'tag'], 
-                            record_prefix='comment_')
-
-    return posts'''
-
+# Data Cleaning and Preprocessing
 def dataCleaning(posts):
     """
     Perform data cleaning and preprocessing on the given DataFrame 'posts'.
@@ -237,7 +258,7 @@ def dataCleaning(posts):
     
     return posts
 
-
+# Sentiment Analysis Plot
 def create_sentiment_plot(posts):
     """
     Creates an interactive bar plot to visualize the sentiment analysis of comments.
@@ -260,9 +281,8 @@ def create_sentiment_plot(posts):
     # Display the plot
     st.plotly_chart(fig, use_container_width=True)
     
-import matplotlib.pyplot as plt
-import streamlit as st
 
+# Word Cloud
 def create_word_cloud(posts):
     """
     Create a word cloud from the comments in the given DataFrame.
@@ -289,6 +309,7 @@ def create_word_cloud(posts):
     # Display the figure in Streamlit
     st.pyplot(fig)
 
+# Metrics Calculation
 def get_metrics(posts,keyword):
     """
     Calculate various metrics based on the given posts data.
@@ -299,7 +320,7 @@ def get_metrics(posts,keyword):
     Returns:
     - reach (int): The number of unique comment authors.
     - engagement (int): The sum of upvotes and number of comments.
-    - share_of_voice (float): The percentage of posts that mention a keyword.
+    - share_of_voice (float): The percentage of posts that mention "Apple Vision Pro".
 
     """
     reach = posts['comment_author'].nunique()
@@ -309,7 +330,7 @@ def get_metrics(posts,keyword):
     share_of_voice = round((total_mentions / total_comments) * 100,2)
     return reach, engagement, share_of_voice
 
-
+# Plotting Market Funnel
 def create_market_funnel(posts):
     """
     Creates a market funnel visualization using a Sankey diagram based on the given posts.
@@ -387,6 +408,7 @@ def create_market_funnel(posts):
     # Display the Sankey diagram in Streamlit
     st.plotly_chart(fig)
 
+# Aspect Sentiment Analysis Plot
 def plot_aspect_sentiment(posts):
     """
     Plots the sentiment distribution by aspects.
@@ -418,7 +440,7 @@ def plot_aspect_sentiment(posts):
     # Display the Plotly figure in Streamlit
     st.plotly_chart(fig)
     
-
+# Sentiment Trends Over Time
 def plot_sentiment_over_time(posts):
     """
     Plots the sentiment type trends over time based on the given posts.
@@ -459,7 +481,7 @@ def plot_sentiment_over_time(posts):
     # Display the Plotly figure in Streamlit
     st.plotly_chart(fig)
     
-
+# Plotting Daily Comments Volume
 def plot_daily_comments_volume(posts):
     """
     Plots the daily volume of comments from a DataFrame of posts.
@@ -481,6 +503,7 @@ def plot_daily_comments_volume(posts):
     fig.update_yaxes(title_text='Number of Comments')
     st.plotly_chart(fig)
 
+# Plotting Average Sentiment by Hour
 def plot_avg_sentiment_by_hour(posts):
     """
     Plots the average sentiment by hour across days of the week.
@@ -517,6 +540,7 @@ def plot_avg_sentiment_by_hour(posts):
     # Display the Plotly figure in Streamlit
     st.plotly_chart(fig)
 
+# Plotting Comments by Aspects
 def plot_comments_by_aspects(posts):
     """
     Plots the distribution of comments by aspects using Plotly.
@@ -551,8 +575,18 @@ def plot_comments_by_aspects(posts):
     # Display the Plotly chart in Streamlit
     st.plotly_chart(fig)
 
+# Generate Word Histogram
 def generate_word_histogram(posts):
-    
+    """
+    Generate a word histogram from the comments in the given DataFrame.
+
+    Parameters:
+    - posts (DataFrame): A DataFrame containing comment data.
+
+    Returns:
+    None
+    """
+
     # Concatenate all comments into a single string
     all_comments = ' '.join(posts['comment_text'].dropna())
 
